@@ -1,0 +1,47 @@
+# 回测与数据配置（固定切分，防过拟合管线的基石）
+# 本文件为评测基准的一部分：修改它等于修改评测器，策略代码无权触碰。
+
+data:
+  source: akshare
+  # 1 只指数 ETF + 10 只沪深300成分股（示例代码，可调整）
+  symbols:
+    - {code: "510300", type: etf, name: "沪深300ETF"}
+    - {code: "600519", type: stock, name: "贵州茅台"}
+    - {code: "000858", type: stock, name: "五粮液"}
+    - {code: "601318", type: stock, name: "中国平安"}
+    - {code: "600036", type: stock, name: "招商银行"}
+    - {code: "000333", type: stock, name: "美的集团"}
+    - {code: "600276", type: stock, name: "恒瑞医药"}
+    - {code: "601888", type: stock, name: "中国中免"}
+    - {code: "000568", type: stock, name: "泸州老窖"}
+    - {code: "002415", type: stock, name: "海康威视"}
+    - {code: "600900", type: stock, name: "长江电力"}
+  start: "2020-01-01"
+  end: "2025-12-31"
+  adjust: qfq  # 前复权
+
+# 时间三段切分：进化只用 train，模型选择用 val，test 只做最终报告
+split:
+  train: ["2020-01-01", "2023-12-31"]
+  val:   ["2024-01-01", "2024-12-31"]
+  test:  ["2025-01-01", "2025-12-31"]
+
+backtest:
+  initial_cash: 1_000_000
+  fees: 0.0003        # 佣金双边
+  slippage: 0.0001    # 滑点
+  min_trade_size: 100 # A股一手100股
+
+fitness:
+  # 适应度 = val_sharpe - dd_penalty * max_drawdown - cost_penalty * turnover - complexity_penalty * n_params
+  dd_penalty: 1.0
+  cost_penalty: 0.5
+  complexity_penalty: 0.01
+  min_trades: 10      # 交易次数低于此视为无效策略，fitness = -inf
+
+evolution:
+  generations: 50
+  population: 8
+  # OpenEvolve LLM 配置（可用环境变量覆盖 API key）
+  llm_primary: "gpt-4o"
+  llm_secondary: "gpt-4o-mini"

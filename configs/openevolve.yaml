@@ -1,25 +1,26 @@
-# OpenEvolve 进化配置
+# OpenEvolve 进化配置（字段名与 openevolve 0.4.0 Config schema 对齐）
 # 文档：https://github.com/algorithmicsuperintelligence/openevolve
 
-# LLM 集成：主模型提变异，次模型采样多样化
 llm:
   primary_model: "gpt-4o"
-  primary_temp: 0.8
   secondary_model: "gpt-4o-mini"
-  secondary_temp: 1.0
+  temperature: 0.8
+  max_tokens: 8192
 
-# 进化参数（对应 configs/base.yaml evolution 节）
-max_generations: 50
-population_size: 8
-num_elites: 2
+database:
+  population_size: 40
+  archive_size: 40
+  num_islands: 2
+  feature_dimensions: []   # M3 阶段接入市场状态分格（MAP-Elites）
 
-# 档案：MAP-Elites 式多样性保持
-archive_size: 40
-feature_dimensions: []  # M3 阶段接入市场状态分格
+evaluator:
+  timeout: 300
+  cascade_evaluation: false   # 单一 fitness 函数，无需级联
 
-# 评测并发
-max_eval_workers: 2   # 沙箱子进程并发，避免压垮本机
-evaluation_timeout: 300
-
-# 日志
+# 进化主循环
+max_iterations: 400            # 默认代数 × 种群规模
+diff_based_evolution: true
+enforce_evolve_blocks: true    # EVOLVE-BLOCK 外的代码强制保护
+max_code_length: 20000
+checkpoint_interval: 50
 log_level: "INFO"

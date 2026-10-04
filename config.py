@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent  # config.py 位于仓库根目录
 CONFIG_PATH = ROOT / "configs" / "base.yaml"
 DATA_DIR = ROOT / "data"
 DB_PATH = ROOT / "experiments.sqlite"
@@ -14,6 +14,7 @@ DB_PATH = ROOT / "experiments.sqlite"
 
 @dataclass
 class DataConfig:
+    source: str = "akshare"
     symbols: list[dict] = field(default_factory=list)
     start: str = "2020-01-01"
     end: str = "2025-12-31"

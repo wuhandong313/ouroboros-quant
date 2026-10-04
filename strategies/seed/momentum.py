@@ -1,7 +1,7 @@
 """种子策略 3：动量（过去 N 日收益为正则持有）。"""
-# === EVOLVE_BLOCK_START: params ===
+# EVOLVE-BLOCK-START:params
 PARAMS = {"lookback": 120, "hold_threshold": 0.0}
-# === EVOLVE_BLOCK_END ===
+# EVOLVE-BLOCK-END
 
 
 def generate_signals(df, params=None):

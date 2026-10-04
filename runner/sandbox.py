@@ -17,7 +17,8 @@ DEFAULT_TIMEOUT = 120  # 总超时秒数
 
 def _child_entry(payload_file: str, result_file: str) -> None:
     """子进程入口：先上限制，再干活，结果写文件（避免 IPC 复杂性）。"""
-    resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT, MEMORY_LIMIT))
+    # 注意：不设 RLIMIT_AS——numba/llvmlite 导入时映射大量虚拟地址空间，
+    # 虚拟内存限制会误杀；资源控制以 RLIMIT_CPU + 总超时为准。
     resource.setrlimit(resource.RLIMIT_CPU, (CPU_LIMIT, CPU_LIMIT))
     # 断网：将文件描述符层面无法直接禁网，macOS 上用 sandbox-exec 由调用方可选启用；
     # 这里以环境变量约定，评测器不提供任何网络工具给策略代码。
@@ -48,7 +49,8 @@ def run_in_sandbox(strategy_path: Path, symbols: list[str], segment: str = "val"
     """在受限子进程中评测策略，返回 {"ok": bool, "fitness": float, ...}。"""
     import tempfile
 
-    ctx = mp.get_context("fork")
+    # macOS 上 fork 与 Objective-C 运行时冲突（vectorbt/objc 崩溃），必须用 spawn
+    ctx = mp.get_context("spawn")
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as pf:
         json.dump({"strategy_path": str(strategy_path), "symbols": symbols,
                    "segment": segment}, pf)
@@ -65,6 +67,12 @@ def run_in_sandbox(strategy_path: Path, symbols: list[str], segment: str = "val"
     try:
         with open(result_file) as f:
             return json.load(f)
+    except FileNotFoundError:
+        # 子进程在写结果前崩溃（导入失败/信号终止等），给出诊断
+        import signal as _signal
+        code = proc.exitcode
+        why = f"被信号 {-code} 终止" if isinstance(code, int) and code < 0 else f"退出码 {code}"
+        return {"ok": False, "error": f"沙箱子进程未产出结果（{why}）"}
     finally:
         Path(payload_file).unlink(missing_ok=True)
         Path(result_file).unlink(missing_ok=True)

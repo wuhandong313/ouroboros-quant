@@ -19,7 +19,7 @@ app = typer.Typer(help="Ouroboros-Quant：自进化量化策略研发系统")
 console = Console()
 
 
-@app.command()
+@app.command("eval")
 def eval_(strategy: str, segment: str = "val"):
     """评测单个策略（沙箱内执行）。"""
     from runner.sandbox import run_in_sandbox
@@ -42,25 +42,25 @@ def eval_(strategy: str, segment: str = "val"):
 
 
 @app.command()
-def evolve(strategy: str, generations: int = 0):
+def evolve(strategy: str, iterations: int = 0, output_dir: str = "openevolve_output"):
     """OpenEvolve 进化战役。"""
     import json
 
-    from config import ROOT
     from runner import tracker
+    from runner.sandbox import run_in_sandbox
 
     cfg = load_config()
-    n_gens = generations or cfg.evolution.generations
+    n_iters = iterations or cfg.evolution.generations * cfg.evolution.population
     symbols = [s["code"] for s in cfg.data.symbols]
 
     try:
-        from openevolve import OpenEvolve
+        from openevolve import run_evolution
     except ImportError:
-        console.print("[red]openevolve 未安装：uv add openevolve[/red]")
+        console.print("[red]openevolve 未安装：uv sync[/red]")
         raise typer.Exit(1)
 
-    # OpenEvolve 需要一个 evaluator 函数：读策略文件 → 沙箱评测 → 返回 fitness
-    def evaluator(program_path: str, **kwargs) -> dict:
+    # OpenEvolve 评测接口：callable(program_path) -> metrics dict
+    def evaluator(program_path: str) -> dict:
         result = run_in_sandbox(Path(program_path), symbols, "val")
         if not result["ok"]:
             console.print(f"[yellow]变体评测失败：{result.get('error', '')[:200]}[/yellow]")
@@ -69,21 +69,28 @@ def evolve(strategy: str, generations: int = 0):
                            source="openevolve")
         return {"score": result["fitness"], "metrics": result["metrics"]}
 
-    config_path = ROOT / "configs" / "openevolve.yaml"
-    system = OpenEvolve(
-        initial_program_path=str(strategy),
-        evaluation_function=evaluator,
-        config_path=str(config_path) if config_path.exists() else None,
+    console.print(f"[green]开始进化：{strategy}，{n_iters} 次迭代[/green]")
+    result = run_evolution(
+        initial_program=strategy,
+        evaluator=evaluator,
+        config="configs/openevolve.yaml",
+        iterations=n_iters,
+        output_dir=output_dir,
+        cleanup=False,
     )
-    console.print(f"[green]开始进化：{strategy}，{n_gens} 代[/green]")
-    best = system.run(iterations=n_gens * cfg.evolution.population)
-    console.print(f"[bold green]最佳 fitness：{best.get('score', best)}[/bold green]")
-    console.print(json.dumps(best, ensure_ascii=False, default=str, indent=2))
+    console.print(f"[bold green]最佳 score：{result.best_score}[/bold green]")
+    console.print(f"输出目录：{result.output_dir}")
+    best_path = Path(output_dir) / "best_program.py"
+    if result.best_code:
+        best_path.write_text(result.best_code, encoding="utf-8")
+        console.print(f"最佳策略已保存：{best_path}")
 
 
 @app.command()
 def report(limit: int = 20):
     """最近实验报告。"""
+    import json
+
     from runner import tracker
 
     rows = tracker.recent_runs(limit)

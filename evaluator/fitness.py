@@ -52,16 +52,23 @@ def compute_fitness(
     cfg = cfg or load_config()
     signal_fn = load_strategy(strategy_path)
 
-    sharpe_list, mdd_list, turnover_list = [], [], []
+    sharpe_list, mdd_list, turnover_list, trade_total = [], [], [], 0
+    active_codes = []
     for code in symbols:
         result = evaluate_symbol(signal_fn, code, segment, cfg)
-        if result.n_trades < cfg.fitness.min_trades:
-            return float("-inf"), {"reason": f"{code} 交易次数 {result.n_trades} < {cfg.fitness.min_trades}"}
-        if result.sharpe == float("-inf"):
-            return float("-inf"), {"reason": f"{code} 无有效交易"}
+        if result.n_trades == 0:
+            continue  # 单标的零交易只跳过，不整体判死
+        active_codes.append(code)
+        trade_total += result.n_trades
         sharpe_list.append(result.sharpe)
         mdd_list.append(result.max_drawdown)
         turnover_list.append(result.turnover)
+
+    # 至少一半标的有效交易，且合计次数过门槛
+    if len(active_codes) < max(1, len(symbols) // 2):
+        return float("-inf"), {"reason": f"仅 {len(active_codes)}/{len(symbols)} 标的有交易"}
+    if trade_total < cfg.fitness.min_trades:
+        return float("-inf"), {"reason": f"合计交易 {trade_total} 次 < 门槛 {cfg.fitness.min_trades}"}
 
     n = len(sharpe_list)
     mean_sharpe = sum(sharpe_list) / n
@@ -81,7 +88,8 @@ def compute_fitness(
         "mean_sharpe": mean_sharpe,
         "mean_max_drawdown": mean_mdd,
         "mean_turnover": mean_turnover,
+        "total_trades": trade_total,
         "complexity_lines": complexity,
-        "per_symbol_sharpe": dict(zip(symbols, [round(s, 3) for s in sharpe_list])),
+        "per_symbol_sharpe": dict(zip(active_codes, [round(s, 3) for s in sharpe_list])),
     }
     return fitness, metrics

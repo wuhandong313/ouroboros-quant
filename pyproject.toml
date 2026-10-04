@@ -1,17 +1,35 @@
 [project]
 name = "ouroboros-quant"
 version = "0.1.0"
-description = "Add your description here"
+description = "Ouroboros-Quant：递归自我改进（RSI）量化策略研发 agent 系统"
 readme = "README.md"
 authors = [
     { name = "巫瀚东", email = "16187019+wu3134@user.noreply.gitee.com" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "akshare",
+    "evoagentx",
+    "litellm",
+    "openevolve",
+    "rich",
+    "typer",
+    "vectorbt",
+    "pyyaml",
+    "pandas",
+    "pyarrow",
+]
 
-[project.scripts]
-ouroboros-quant = "ouroboros_quant:main"
+[tool.uv]
+# 本项目是应用而非库：不构建、不安装自身，代码放仓库根目录
+package = false
 
-[build-system]
-requires = ["uv_build>=0.12.5,<0.13.0"]
-build-backend = "uv_build"
+[[tool.uv.index]]
+# 国内镜像加速（仅本项目作用域，可随时删除换回官方源）
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

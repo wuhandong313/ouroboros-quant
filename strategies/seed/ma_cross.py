@@ -2,9 +2,9 @@
 
 策略接口约定：暴露 generate_signals(df, params) -> pd.Series（目标仓位 0~1）。
 """
-# === EVOLVE_BLOCK_START: params ===
+# EVOLVE-BLOCK-START:params
 PARAMS = {"fast": 10, "slow": 60}
-# === EVOLVE_BLOCK_END ===
+# EVOLVE-BLOCK-END
 
 
 def generate_signals(df, params=None):

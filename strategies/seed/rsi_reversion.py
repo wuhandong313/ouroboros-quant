@@ -1,7 +1,7 @@
 """种子策略 2：RSI 均值回归。"""
-# === EVOLVE_BLOCK_START: params ===
+# EVOLVE-BLOCK-START:params
 PARAMS = {"window": 14, "lower": 30, "upper": 70}
-# === EVOLVE_BLOCK_END ===
+# EVOLVE-BLOCK-END
 
 
 def generate_signals(df, params=None):

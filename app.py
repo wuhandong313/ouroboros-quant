@@ -86,6 +86,35 @@ def evolve(strategy: str, iterations: int = 0, output_dir: str = "openevolve_out
         console.print(f"最佳策略已保存：{best_path}")
 
 
+@app.command("metan")
+def metan(
+    iterations: int = typer.Option(10, "--iterations", help="Meta^n 最大迭代次数"),
+    beam_width: int = typer.Option(2, "--beam-width", help="每轮选择的父代数 B"),
+    output_dir: str = typer.Option("metan_output", "--output-dir", help="输出目录"),
+    resume: bool = typer.Option(False, "--resume", help="从 output_dir 的 checkpoint 恢复"),
+):
+    """Meta^n 进化战役（单标的 RSI 策略，DeepSeek 后端）。"""
+    from metan_adapter import run_metan
+
+    console.print(
+        f"[green]Meta^n 进化开始：iterations={iterations}, "
+        f"beam_width={beam_width}, output={output_dir}[/green]"
+    )
+    result = run_metan(
+        max_iterations=iterations,
+        beam_width=beam_width,
+        output_dir=output_dir,
+        resume=resume,
+    )
+    console.print("[bold green]═══ Meta^n 最终摘要 ═══[/bold green]")
+    console.print(f"  Iterations: {result.total_iterations}")
+    console.print(f"  Archive size: {result.archive_size}")
+    console.print(f"  Best chain mean_score: {result.best_mean_score:.3f}")
+    console.print(f"  Oracle mean_score: {result.oracle_mean_score:.3f}")
+    console.print(f"  Best candidate: {result.best_candidate_id}")
+    console.print(f"  Total tokens: {result.total_tokens:,}")
+
+
 @app.command()
 def report(limit: int = 20):
     """最近实验报告。"""

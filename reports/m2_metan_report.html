@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ouroboros-Quant · M2 阶段报告</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --card: #ffffff; --ink: #1a2233; --muted: #6b7280;
+    --accent: #2563eb; --good: #16a34a; --bad: #dc2626; --warn: #d97706;
+    --border: #e5e7eb; --code-bg: #0f172a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+         background: var(--bg); color: var(--ink); line-height: 1.65; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+  header { border-left: 5px solid var(--accent); padding-left: 18px; margin-bottom: 36px; }
+  header h1 { font-size: 28px; letter-spacing: .5px; }
+  header .sub { color: var(--muted); margin-top: 6px; font-size: 14px; }
+  h2 { font-size: 20px; margin: 40px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 16px; margin: 20px 0 8px; }
+  p { margin: 8px 0; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+          padding: 18px 20px; margin: 12px 0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+  .kpi { text-align: center; padding: 16px 10px; }
+  .kpi .num { font-size: 26px; font-weight: 700; color: var(--accent); }
+  .kpi .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--card); }
+  th, td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+  th { background: #f1f5f9; font-weight: 600; white-space: nowrap; }
+  tr:hover td { background: #f8fafc; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .pill.ok { background: #dcfce7; color: var(--good); }
+  .pill.doing { background: #fef3c7; color: var(--warn); }
+  .pill.todo { background: #e5e7eb; color: var(--muted); }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; font-size: 13px; }
+  .bar-row .name { width: 150px; flex-shrink: 0; }
+  .bar-track { flex: 1; background: #eef2f7; border-radius: 4px; height: 18px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; }
+  .bar-row .val { width: 90px; text-align: right; font-variant-numeric: tabular-nums; }
+  code, pre { font-family: "SF Mono", Menlo, Consolas, monospace; }
+  code { background: #eef2f7; padding: 1px 6px; border-radius: 4px; font-size: 13px; }
+  pre { background: var(--code-bg); color: #e2e8f0; padding: 14px 16px; border-radius: 8px;
+        overflow-x: auto; font-size: 12.5px; line-height: 1.55; }
+  .flow { display: flex; flex-direction: column; align-items: center; gap: 0; margin: 18px 0; }
+  .flow .box { background: var(--card); border: 2px solid var(--accent); border-radius: 8px;
+               padding: 10px 22px; text-align: center; width: min(520px, 100%); }
+  .flow .box small { color: var(--muted); display: block; }
+  .flow .arrow { color: var(--muted); font-size: 20px; line-height: 1.4; }
+  .note { border-left: 4px solid var(--warn); background: #fffbeb; padding: 10px 14px;
+          border-radius: 0 8px 8px 0; margin: 10px 0; font-size: 14px; }
+  .good-note { border-left: 4px solid var(--good); background: #f0fdf4; padding: 10px 14px;
+               border-radius: 0 8px 8px 0; margin: 10px 0; font-size: 14px; }
+  .bad-note { border-left: 4px solid var(--bad); background: #fef2f2; padding: 10px 14px;
+              border-radius: 0 8px 8px 0; margin: 10px 0; font-size: 14px; }
+  footer { margin-top: 60px; color: var(--muted); font-size: 12px; text-align: center; }
+  .muted { color: var(--muted); }
+  .num-td { font-variant-numeric: tabular-nums; }
+  .pos { color: var(--good); font-weight: 700; }
+  .neg { color: var(--bad); font-weight: 700; }
+  ul { margin: 8px 0 8px 22px; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Ouroboros-Quant · M2 阶段报告</h1>
+  <div class="sub">递归自我改进（RSI）量化研究 Agent 系统 · 报告生成于 2026-10-05 · 里程碑 M2：全栈替换为 Meta^n 引擎并跑通首次正式进化战役</div>
+</header>
+
+<h2>1 · 里程碑概览</h2>
+<div class="card">
+  <p><strong>一句话总结</strong>：进化引擎全栈替换为 Meta^n（arXiv 2608.24735，固定 Ω 元操作递归层叠），首次正式战役 11 个标的、11 次迭代、20 万 tokens 内完成：
+  聚合分从种子 −2.12 改善到 <strong>−1.28（+0.84，39.8%）</strong>，<strong>600276 恒瑞医药从 −3.70 翻正到 +1.58</strong>，
+  best chain 深度 3（2 层 Ω 注入），test(2025) 段 −1.67、衰减 0.40，patience 提前停止。</p>
+  <div class="grid">
+    <div class="card kpi"><div class="num">−2.12 → −1.28</div><div class="lbl">val 聚合分（11 标的均值，11 迭代）</div></div>
+    <div class="card kpi"><div class="num">3 个</div><div class="lbl">正分标的（600276 +1.58 · 000333 +0.38 · 600036 +0.33）</div></div>
+    <div class="card kpi"><div class="num">201,724</div><div class="lbl">tokens 总消耗（55 次调用，仅外循环）</div></div>
+    <div class="card kpi"><div class="num">深度 3</div><div class="lbl">best chain（2 层 Ω 注入，ancestry 种子→gen1→gen8）</div></div>
+  </div>
+</div>
+
+<h2>2 · Meta^n 是什么：与 OpenEvolve 的本质区别</h2>
+<div class="card">
+  <p><strong>固定 Ω 元操作</strong>。引擎不进化"任意代码"，而是把"改进"这个动作收敛为一个固定元操作 Ω：
+  读取此前所有任务轨迹与分数 → 诊断失败模式 → 向下游注入两样东西——
+  <code>pre_process</code>（策略指引文本，改写求解器的上下文）和 <code>solver_lib</code>（可执行辅助函数，扩充求解器的工具箱）。
+  每一层 Ω 注入都留下完整的 rationale 与代码，<strong>递归自我改进因此是天然可解释的</strong>（见第 5 节实录）。</p>
+  <p><strong>递归层叠，深度由收敛决定</strong>。Ω 的输出作为下一层 Ω 的输入：depth 1 = 种子链，depth 2 = 第一层注入，depth 3 = 在第一层之上再注入……
+  层层累积成一条"装配链"（本战役 best chain：gen0_seed → gen1_b0_k0 → gen8_b0_k0）。
+  连续 patience 代无改进即停——本次 patience=3，在第 8 迭代找到 best 后于第 11 迭代提前终止。</p>
+  <p><strong>与 OpenEvolve（M1 基线）的本质区别</strong>：OpenEvolve 是 MAP-Elites 档案上的单层代码进化——每代从档案采样父代、LLM 提出 diff、好的入档案，
+  改进不累积成链；Meta^n 是<strong>链式装配</strong>：每层 Ω 能看到此前所有层做过什么、效果如何，做的是"在已有改进之上再改进"。</p>
+  <p><strong>为什么它更适合量化研究</strong>：</p>
+  <ul>
+    <li><strong>多标的 = 天然多任务</strong>。11 个标的即 11 个任务，per-task best 分开追踪，每个标的的最好解都被保留，最终合成 oracle（逐任务取最优的组合解）。</li>
+    <li><strong>层角色自发涌现</strong>。无需人为指定，本战役中 depth-2 涌现出"策略范式"层（均值回归+趋势门控），depth-3 涌现出"模型选择"层（网格搜索选参）——正好对应量化研究的两个核心环节。</li>
+    <li><strong>一次通用注入可惠及多个标的</strong>。标的间共享市场结构（换手惩罚、趋势/均值回归范式），Ω 的通用诊断能跨任务迁移（见 gen1 一层注入改善 4 个标的）。</li>
+  </ul>
+</div>
+
+<h2>3 · 系统架构：装配链</h2>
+<div class="flow">
+  <div class="box"><strong>QuantAdapter</strong><small>metan_bridge/quant_benchmark.py:39 · 11 标的 = 11 任务 · per-symbol fitness = combined_score（val 段夏普 − 回撤惩罚 − 换手成本 − 复杂度惩罚）</small></div>
+  <div class="arrow">↓</div>
+  <div class="box"><strong>OpenEvolveExecutor</strong><small>meta_n/integrations/openevolve.py:737 · 引擎以 OpenEvolve 兼容协议调用 LLM（deepseek-chat）生成 Ω 注入</small></div>
+  <div class="arrow">↓</div>
+  <div class="box"><strong>OmegaEngine</strong><small>meta_n/core/omega.py:51 · 固定 Ω 元操作：诊断轨迹 → 产出 pre_process + solver_lib（含 rationale）</small></div>
+  <div class="arrow">↓</div>
+  <div class="box"><strong>EvolutionaryOrchestrator</strong><small>meta_n/core/evolutionary_orchestrator.py:464 · 评测/档案/beam 管理 · consolidate 聚合 · regression_guard 防劣化（新层若损害已改善任务则回退）</small></div>
+</div>
+<div class="card">
+  <p>11 个标的：510300（沪深300ETF）、600519 贵州茅台、000858 五粮液、601318 中国平安、600036 招商银行、000333 美的集团、600276 恒瑞医药、601888 中国中免、000568 泸州老窖、002415 海康威视、600900 长江电力。
+  数据 2020–2025 日线：2024 及以前为进化可见段（val），2025 为 test 段（对进化全程不可见）。
+  回测 vectorbt，费率 3bp + 滑点 1bp。pass@1 = 0.909（10/11 任务可运行，600900 运行时错误 → 零交易计 0 分）。</p>
+</div>
+
+<h2>4 · 首次正式战役结果</h2>
+<div class="card">
+  <h3>4.1 收敛曲线（val 聚合分，12 个观测点）</h3>
+  <div id="conv-chart"></div>
+  <p class="muted" style="font-size:13px">第 1 迭代（gen1，depth-2 通用注入）即带来最大跳变 −2.12→−1.46；此后逐级爬升；第 8 迭代 gen8_b0_k0（depth-3 注入）达到 −1.277；随后 3 迭代无改进，patience=3 触发提前停止。虚线为 test 段均值 −1.67。</p>
+</div>
+<div class="card">
+  <h3>4.2 per-task best（11 个标的，val 段，降序）</h3>
+  <div id="task-bars"></div>
+  <p class="muted" style="font-size:13px">绿色为正分标的。600900 为 0 分（运行时错误 → 零交易），非真实策略分。</p>
+</div>
+<div class="card">
+  <h3>4.3 val vs test 对照（best chain：gen8_b0_k0）</h3>
+  <table>
+    <tr><th>标的</th><th>val best</th><th>test (2025)</th><th>Δ</th><th>解读</th></tr>
+    <tr><td>600276 恒瑞医药</td><td class="num-td pos">+1.58</td><td class="num-td pos">+0.63</td><td class="num-td">−0.95</td><td>唯一 test 正分标的，改善跨段存活</td></tr>
+    <tr><td>000333 美的集团</td><td class="num-td pos">+0.38</td><td class="num-td neg">−1.85</td><td class="num-td">−2.22</td><td>翻负，val 过拟合嫌疑最大</td></tr>
+    <tr><td>600036 招商银行</td><td class="num-td pos">+0.33</td><td class="num-td neg">−0.76</td><td class="num-td">−1.09</td><td>翻负</td></tr>
+    <tr><td>002415 海康威视</td><td class="num-td">−0.76</td><td class="num-td">−0.25</td><td class="num-td pos">+0.52</td><td>test 反而更好</td></tr>
+    <tr><td>000568 泸州老窖</td><td class="num-td">−1.70</td><td class="num-td">−1.68</td><td class="num-td pos">+0.02</td><td>跨段稳定</td></tr>
+    <tr><td>601318 中国平安</td><td class="num-td">−2.47</td><td class="num-td">−1.25</td><td class="num-td pos">+1.22</td><td>test 反而更好</td></tr>
+    <tr><td>000858 五粮液</td><td class="num-td">−3.00</td><td class="num-td">−2.81</td><td class="num-td pos">+0.20</td><td>test 反而更好</td></tr>
+    <tr><td>510300 沪深300ETF</td><td class="num-td">−1.74</td><td class="num-td">−2.12</td><td class="num-td">−0.38</td><td>小幅衰减</td></tr>
+    <tr><td>600519 贵州茅台</td><td class="num-td">−3.15</td><td class="num-td">−4.00</td><td class="num-td">−0.85</td><td>衰减</td></tr>
+    <tr><td>601888 中国中免</td><td class="num-td">−3.51</td><td class="num-td">−4.32</td><td class="num-td">−0.81</td><td>衰减</td></tr>
+    <tr><td>600900 长江电力</td><td class="num-td">0.00</td><td class="num-td">0.00</td><td class="num-td">0.00</td><td>零交易（运行时错误），未攻破</td></tr>
+    <tr><td><strong>均值</strong></td><td class="num-td"><strong>−1.277</strong></td><td class="num-td"><strong>−1.673</strong></td><td class="num-td"><strong>−0.40</strong></td><td>整体衰减可控但需 walk-forward 确认</td></tr>
+  </table>
+  <div class="good-note">衰减并非单向恶化：4 个标的 test 反而更好（601318 +1.22 最显著），说明部分改善是真实结构性进步；但 000333/600036 翻负提示仍有 val 过拟合成分。</div>
+</div>
+<div class="card">
+  <h3>4.4 成本与过程</h3>
+  <table>
+    <tr><th>指标</th><th>值</th></tr>
+    <tr><td>tokens 总量</td><td class="num-td">201,724（prompt 142,120 + completion 59,604，55 次调用；内循环 0）</td></tr>
+    <tr><td>迭代 / 档案</td><td class="num-td">11 迭代（patience=3 提前停止），档案 13 个候选</td></tr>
+    <tr><td>单候选成本</td><td class="num-td">1.1万–1.6万 tokens（gen0 种子 13,441 · gen1 14,979 · gen2 15,799 · gen8 11,050）</td></tr>
+    <tr><td>温度策略</td><td class="num-td">0.7（种子/gen1）→ 0.9（后期探索）</td></tr>
+    <tr><td>pass@1</td><td class="num-td">0.909（10/11 可运行；唯一失败 600900 运行时错误）</td></tr>
+    <tr><td>oracle 组成</td><td class="num-td">2 条贡献链：600276 来自 gen8_b0_k0 链，其余 10 标的来自 gen0_seed 链</td></tr>
+  </table>
+  <div class="note">20 万 tokens 换来聚合分 +0.84 与一个跨段正分标的——但 campaign 由 patience 提前终止，best 在第 8 迭代才出现，说明远未触到收敛上限，扩大战役预期仍有空间。</div>
+</div>
+
+<h2>5 · Ω 注入了什么：递归自我改进的可解释性实录</h2>
+<div class="card">
+  <p>best chain（gen0_seed → gen1_b0_k0 → gen8_b0_k0）的 2 层 Ω 注入完整保存在 <code>metan_output/lineage/best_chain.json</code> 与 <code>metan_output/archive/</code>。这是"AI 改进 AI"过程留下的第一手证据。</p>
+
+  <h3>第 1 层（depth-2）：通用策略范式注入 → 4 个标的同时改善</h3>
+  <p><strong>Ω 的诊断</strong>（rationale 摘要）：失败标的的共同模式是"高换手 + 负夏普"——600276 换手 5.012、夏普 −0.475、65 笔交易；而赢家 600036（+0.33）/000333（+0.38）换手仅 0.7–1.6。
+  胜出范式 = <strong>均值回归信号 + 长期趋势门控 + ATR 波动率缩放 + EWMA 平滑</strong>，而非双 EMA 趋势跟踪。</p>
+  <p><strong>注入内容</strong>：通用 pre_process 策略指引（"换手超 3 几乎必然低分"）+ 可执行辅助函数 <code>mean_reversion_signal()</code>（Wilder RSI 连续信号 ÷ 50 归一、120 日 MA 门控、ATR 缩放、EWMA span=3 平滑、裁剪到 [0,1]）。</p>
+  <pre>def mean_reversion_signal(df, ma_window=120, rsi_period=14, ...):
+    ma_long = close.rolling(ma_window, min_periods=max(20, ma_window // 2)).mean()
+    rsi = wilder_rsi(close)                    # ewm alpha=1/14
+    rsi_signal = (50 - rsi) / 50               # 连续均值回归核心
+    # 长趋势门控 + ATR 波动率缩放 + EWMA 平滑 → 低换手续航
+    ...</pre>
+  <div class="good-note"><strong>效果（gen0_seed → gen1_b0_k0）</strong>：600276 −3.70→−0.45（+3.25）· 000858 −5.18→−3.00（+2.18）· 601888 −4.64→−3.51（+1.13）· 510300 −2.42→−1.74（+0.68）。一层通用元操作，4 个标的受益——多任务共享结构带来的杠杆。</div>
+
+  <h3>第 2 层（depth-3）：模型选择层注入 → 600276 翻正</h3>
+  <p><strong>Ω 的诊断</strong>：剩余差距不在信号结构，而在<strong>模型选择</strong>——档案中 600276 的最优解靠网格搜索参数并按"夏普 − 0.5×换手"目标择优（+1.21），而当前解硬编码单一参数组只拿到 −0.45。求解器自己写不出稳健的选参代码（零方差/NaN 崩溃、忘记换手惩罚、前视偏差）。</p>
+  <p><strong>注入内容</strong>：<code>tune_mean_reversion()</code> —— 在 (ma_window, target_vol, smooth_span, long_only) 网格上调用第 1 层的 <code>mean_reversion_signal</code>，用与 fitness 一致的目标（样本内夏普 − 0.5×换手，1 日滞后防前视）选出最优参数，失败回退平仓信号。</p>
+  <div class="good-note"><strong>效果（gen1 → gen8）</strong>：600276 −0.45 → <strong>+1.58</strong>（+2.02），全链累计 −3.70 → +1.58（摆幅 +5.28）。聚合分 −1.461 → −1.277，刷新全程最优。</div>
+
+  <div class="note"><strong>层角色涌现</strong>：depth-2 学到"什么范式能赢"（策略层），depth-3 学到"如何选参数"（选择层）——两层不重复、层层递进，且每一层都建立在上一层的函数之上（tune 调用 mean_reversion）。这正是 Meta^n 论文所说的递归层叠：改进的改进。</div>
+</div>
+
+<h2>6 · 对比 M1 基线（OpenEvolve 聚合模式 vs Meta^n 多任务模式）</h2>
+<table>
+  <tr><th style="width:130px">维度</th><th>OpenEvolve 基线（M1，分支 baseline/openevolve-evoagentx）</th><th>Meta^n（M2，当前全栈）</th></tr>
+  <tr><td>引擎</td><td><code>openevolve 0.4.0</code>（AlphaEvolve 开源实现，MAP-Elites 单层代码进化）</td><td><code>meta-n 0.2.0</code>（固定 Ω 元操作递归层叠，arXiv 2608.24735）</td></tr>
+  <tr><td>优化对象</td><td>单一策略代码（rsi_reversion）</td><td>11 标的 = 11 任务的装配链（信号代码由 LLM 直接生成）</td></tr>
+  <tr><td>fitness 语义</td><td>聚合分：11 标的平均，弱标的被强标的掩盖</td><td>per-symbol combined_score，per-task best 分开追踪 + oracle 逐任务取最优合成</td></tr>
+  <tr><td>结果（2024 val）</td><td>聚合 −5.65 → <strong>−0.22</strong>（12 代）；mean_sharpe 0.39→0.93；换手 12.2→2.1</td><td>聚合 −2.12 → <strong>−1.28</strong>（11 迭代）；3 个标的正分；test −1.67</td></tr>
+  <tr><td>成本</td><td>—（M1 未计入本表）</td><td>201,724 tokens / 55 次调用 / patience 提前停止</td></tr>
+  <tr><td>可解释性</td><td>最终 diff 一份，过程可追溯性弱</td><td>每层注入含 rationale + 代码，谱系完整（ancestry 可回放）</td></tr>
+</table>
+<div class="note"><strong>关于 −0.22 vs −1.28 的诚实说明</strong>：两者语义不同、不可直接比较。M1 的 −0.22 是"一个被聚合 fitness 优化的策略"在 11 标的上的总分——它无法保证单标的都好（聚合分掩盖分布）；
+M2 的 −1.28 是 11 个独立任务分数的均值，同时明确暴露了哪些标的仍差（−3.5 ~ −3.0）。M1 证明了"进化能把一个坏策略改好"，M2 证明了"递归层叠能在多任务上逐标的定位并改善"，且 M2 战役仅 11 迭代即被 patience 截停，远未到上限。</div>
+
+<h2>7 · 诚实的问题与局限</h2>
+<div class="card">
+  <ul>
+    <li><strong>弱势标的未攻破</strong>：600900 零交易（运行时错误，全程未被修复）、601888（−3.51/−4.32）、600519（−3.15/−4.00）、000858（−3.00/−2.81）仍为大负分。当前 Ω 的注意力集中在"有 headroom 的任务"（600276），对最差任务缺乏定向火力。</li>
+    <li><strong>oracle 依赖 2 条链合成</strong>：11 个标的中 10 个的最优来自 gen0_seed 链、600276 来自 gen8_b0_k0 链——没有单条链能同时改善所有任务，说明单链泛化有限；oracle 合成机制必要但也意味着"真实交付物"是组合解而非单一策略。</li>
+    <li><strong>patience=3 可能过早停止</strong>：best 出现在第 8 迭代，距停止仅 3 代。更深的递归（depth 4+）从未被尝试，depth-3→4 层可能存在（如"风控层""执行层"）未被探索。</li>
+    <li><strong>test 衰减 0.40 需 walk-forward 验证</strong>：000333（+0.38→−1.85）与 600036（+0.33→−0.76）翻负，提示 Ω 注入的参数与范式部分适配了 val 段特征；单次 train/val/test 切分证据强度有限，需要滚动窗口 + Deflated Sharpe 校正。</li>
+    <li><strong>规模尚小</strong>：11 迭代 / 13 个档案候选 / 单 beam（gen 编号 b0），beam-width 与深度的组合空间基本未探索。</li>
+  </ul>
+</div>
+
+<h2>8 · 下一步（M2.5 → M3）</h2>
+<div class="card">
+  <ul>
+    <li><strong>① 扩大战役</strong>：beam-width 2、迭代 30+、max-depth 6→8，验证深度递归是否涌现新角色层（风控/执行/组合层）。</li>
+    <li><strong>② 弱势标的定向 Ω 焦点</strong>：对 600900（先修运行时错误）、601888、600519 施加 task-focused 注入预算，而非让 Ω 自由选择 headroom。</li>
+    <li><strong>③ 稳健性验证</strong>：walk-forward 滚动窗口 + Deflated Sharpe，把 val→test 衰减 0.40 压到可接受区间。</li>
+    <li><strong>④ M3 组合与风控层</strong>：把 per-task oracle 解组合成组合层面策略（等权起步），接入风险模型与优化器，对齐研究流程第 4 环。</li>
+  </ul>
+</div>
+
+<footer>
+  Ouroboros-Quant · M2 阶段报告 · 生成于 2026-10-05<br>
+  代码基线：674ce75（统一 Meta^n 入口）· b56b318（全栈替换架构）· 引擎 meta-n 0.2.0 · LLM deepseek-chat<br>
+  数据来源：metan_output/（summary.json · chain_test_results.json · oracle_summary.json · lineage/best_chain.json · archive/）· 仅用于量化研究与教育，不构成投资建议
+</footer>
+
+</div>
+
+<script>
+// ---- 4.1 收敛曲线（纯 SVG）----
+(function () {
+  const conv = [-2.1191, -1.4606, -1.4606, -1.3506, -1.3506, -1.3102, -1.3102, -1.3102,
+                -1.2765, -1.2765, -1.2765, -1.2765];
+  const testMean = -1.6730;
+  const W = 860, H = 280, padL = 56, padR = 24, padT = 24, padB = 42;
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const yMin = -2.25, yMax = -1.15;
+  const x = i => padL + iw * i / (conv.length - 1);
+  const y = v => padT + ih * (yMax - v) / (yMax - yMin);
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;font-family:inherit">';
+  // 网格与 y 轴刻度
+  for (let v = -2.2; v <= -1.2; v += 0.2) {
+    const yy = y(v).toFixed(1);
+    s += '<line x1="' + padL + '" y1="' + yy + '" x2="' + (W - padR) + '" y2="' + yy + '" stroke="#e5e7eb" stroke-width="1"/>';
+    s += '<text x="' + (padL - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="12" fill="#6b7280">' + v.toFixed(1) + '</text>';
+  }
+  // x 轴刻度
+  for (let i = 0; i < conv.length; i++) {
+    s += '<text x="' + x(i) + '" y="' + (H - 16) + '" text-anchor="middle" font-size="11" fill="#6b7280">' + i + '</text>';
+  }
+  s += '<text x="' + (padL + iw / 2) + '" y="' + (H - 2) + '" text-anchor="middle" font-size="12" fill="#6b7280">迭代（0 = 种子评测）</text>';
+  // test 均值虚线
+  s += '<line x1="' + padL + '" y1="' + y(testMean) + '" x2="' + (W - padR) + '" y2="' + y(testMean) + '" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.7"/>';
+  s += '<text x="' + (W - padR - 4) + '" y="' + (y(testMean) - 6) + '" text-anchor="end" font-size="12" fill="#dc2626">test 均值 −1.67</text>';
+  // 主折线
+  const pts = conv.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
+  s += '<polyline points="' + pts + '" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>';
+  // 数据点
+  conv.forEach((v, i) => {
+    const best = (i === 8);
+    s += '<circle cx="' + x(i) + '" cy="' + y(v) + '" r="' + (best ? 6 : 3.5) + '" fill="' + (best ? '#16a34a' : '#2563eb') + '"/>';
+  });
+  // 标注：gen1 跳变 & best
+  s += '<text x="' + (x(1) + 8) + '" y="' + (y(conv[1]) + 22) + '" font-size="12" fill="#1a2233">gen1（depth-2 通用注入）−2.12→−1.46</text>';
+  s += '<text x="' + x(8) + '" y="' + (y(conv[8]) - 12) + '" text-anchor="middle" font-size="12" fill="#16a34a" font-weight="700">best gen8 −1.277（patience 3 → 停）</text>';
+  s += '</svg>';
+  document.getElementById('conv-chart').innerHTML = s;
+})();
+
+// ---- 4.2 per-task best 横向条形图 ----
+(function () {
+  const tasks = [
+    { sym: '600276', name: '恒瑞医药', v: 1.5782, test: 0.6308 },
+    { sym: '000333', name: '美的集团', v: 0.3781, test: -1.8468 },
+    { sym: '600036', name: '招商银行', v: 0.3294, test: -0.7590 },
+    { sym: '600900', name: '长江电力', v: 0.0,    test: 0.0, zero: true },
+    { sym: '002415', name: '海康威视', v: -0.7643, test: -0.2464 },
+    { sym: '000568', name: '泸州老窖', v: -1.7023, test: -1.6847 },
+    { sym: '510300', name: '沪深300ETF', v: -1.7355, test: -2.1196 },
+    { sym: '601318', name: '中国平安', v: -2.4681, test: -1.2506 },
+    { sym: '000858', name: '五粮液',   v: -3.0012, test: -2.8053 },
+    { sym: '600519', name: '贵州茅台', v: -3.1481, test: -3.9995 },
+    { sym: '601888', name: '中国中免', v: -3.5080, test: -4.3224 }
+  ];
+  const maxAbs = 3.51;
+  let html = '';
+  tasks.forEach(t => {
+    const pct = t.zero ? 0 : Math.max(2, Math.abs(t.v) / maxAbs * 100).toFixed(1);
+    const color = t.zero ? '#9ca3af' : (t.v > 0 ? '#16a34a' : '#f87171');
+    const cls = t.v > 0 ? 'pos' : (t.v < 0 ? 'neg' : 'muted');
+    html += '<div class="bar-row">'
+      + '<div class="name">' + t.sym + ' ' + t.name + '</div>'
+      + '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>'
+      + '<div class="val ' + cls + '">' + (t.zero ? '0.00（零交易）' : (t.v > 0 ? '+' : '') + t.v.toFixed(2)) + '</div>'
+      + '</div>';
+  });
+  document.getElementById('task-bars').innerHTML = html;
+})();
+</script>
+
+</body>
+</html>

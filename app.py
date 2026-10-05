@@ -2,6 +2,7 @@
 
 用法：
     python -m app evolve strategies/seed/ma_cross.py          # OpenEvolve 进化
+    python -m app evolve-metan                                # Meta^n 全栈进化
     python -m app eval strategies/seed/ma_cross.py            # 评测单个策略
     python -m app report                                      # 最近实验报告
 """
@@ -92,6 +93,7 @@ def metan(
     beam_width: int = typer.Option(2, "--beam-width", help="每轮选择的父代数 B"),
     output_dir: str = typer.Option("metan_output", "--output-dir", help="输出目录"),
     resume: bool = typer.Option(False, "--resume", help="从 output_dir 的 checkpoint 恢复"),
+    limit: int = typer.Option(None, "--limit", help="只跑前 N 个任务（冒烟用）"),
 ):
     """Meta^n 进化战役（单标的 RSI 策略，DeepSeek 后端）。"""
     from metan_adapter import run_metan
@@ -105,6 +107,7 @@ def metan(
         beam_width=beam_width,
         output_dir=output_dir,
         resume=resume,
+        limit=limit,
     )
     console.print("[bold green]═══ Meta^n 最终摘要 ═══[/bold green]")
     console.print(f"  Iterations: {result.total_iterations}")
@@ -113,6 +116,125 @@ def metan(
     console.print(f"  Oracle mean_score: {result.oracle_mean_score:.3f}")
     console.print(f"  Best candidate: {result.best_candidate_id}")
     console.print(f"  Total tokens: {result.total_tokens:,}")
+
+
+@app.command("evolve-metan")
+def evolve_metan(
+    iterations: int = typer.Option(12, "--iterations", help="Meta^n 最大迭代次数"),
+    patience: int = typer.Option(3, "--patience", help="连续无改善轮数后提前停止"),
+    max_depth: int = typer.Option(6, "--max-depth", help="候选链最大深度（递归 Ω 层数）"),
+    output_dir: str = typer.Option("metan_output", "--output-dir", help="输出目录"),
+    resume: bool = typer.Option(False, "--resume", help="从 output_dir 的 checkpoint 恢复"),
+    seed: int = typer.Option(42, "--seed", help="随机种子"),
+):
+    """Meta^n 全栈进化战役（每个标的一个任务，DeepSeek 后端）。
+
+    装配链照抄 references/meta-n/meta_n/main.py 的编程式装配段，
+    无需 OpenEvolve 的 monkey-patch。
+    """
+    import asyncio
+    import os
+    from datetime import datetime
+
+    from metan_bridge.quant_benchmark import METAN_FITNESS_CONFIG, QuantAdapter
+
+    cfg = load_config()
+    api_key = os.environ.get("DEEPSEEK_API_KEY")  # config.py 导入时已加载 .env
+    if not api_key:
+        console.print("[red]DEEPSEEK_API_KEY 未设置：请在项目根 .env 中配置[/red]")
+        raise typer.Exit(1)
+
+    from meta_n.core.evolutionary_orchestrator import (
+        EvolutionaryConfig,
+        EvolutionaryOrchestrator,
+    )
+    from meta_n.core.llm_client import LLMClient, LLMConfig
+    from meta_n.core.omega import OmegaEngine
+    from meta_n.integrations.openevolve import OpenEvolveExecutor
+
+    llm_client = LLMClient(LLMConfig(
+        base_url="https://api.deepseek.com",
+        api_key=api_key,
+        model="deepseek-chat",
+        backend="openrouter",  # 通用 OpenAI 兼容后端
+        # daily_budget 故意不设：meta_n 定价表无 deepseek，设置会 KeyError
+    ))
+    adapter = QuantAdapter(cfg)
+    executor = OpenEvolveExecutor(adapter)
+    omega = OmegaEngine(llm_client)
+
+    out_path = Path(output_dir)
+    if not out_path.is_absolute():
+        out_path = Path.cwd() / out_path
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    evo_config = EvolutionaryConfig(
+        max_iterations=iterations,
+        patience=patience,
+        max_depth=max_depth,
+        output_dir=str(out_path),
+        seed=seed,
+        epsilon=0.02,
+        beam_width=1,
+        beam_candidates=1,
+        temperatures=[0.5, 0.7, 0.9],
+        consolidate=True,       # 每候选只改一个焦点标的，其余继承最优（防互相拖累）
+        regression_guard=True,  # 可部署最优不得低于 base 复采样下限
+        eval_repeats=3,         # LLM 生成随机，中位数降噪
+        gate_tasks=3,
+        parallel=1,
+    )
+    orch = EvolutionaryOrchestrator(
+        llm_client, executor, omega, evo_config,
+        solver_language="openevolve",
+    )
+
+    tasks = adapter.load_tasks()
+    console.print(
+        f"[green]Meta^n 全栈进化开始：{len(tasks)} 个标的任务，"
+        f"iterations={iterations}, depth={max_depth}, output={out_path}[/green]"
+    )
+
+    # 运行 provenance（照 main.py 的 build_base_run_config + evolutionary 块）
+    run_config = {
+        "project": "ouroboros-quant",
+        "benchmark": adapter.name,
+        "model": "deepseek-chat",
+        "base_url": "https://api.deepseek.com",
+        "solver_language": "openevolve",
+        "executor": type(executor).__name__,
+        "orchestrator": "evolutionary",
+        "max_iterations": iterations,
+        "patience": patience,
+        "max_depth": max_depth,
+        "epsilon": 0.02,
+        "parallel": 1,
+        "seed": seed,
+        "consolidate": True,
+        "regression_guard": True,
+        "eval_repeats": 3,
+        "gate_tasks": 3,
+        "symbols": adapter.symbols,
+        "fitness_config": str(METAN_FITNESS_CONFIG),
+        "timestamp": datetime.now().isoformat(),
+    }
+    result = asyncio.run(orch.run(tasks, resume=resume, run_config=run_config))
+    orch.save_results(result, run_config=run_config)
+
+    console.print("[bold green]═══ Meta^n 最终摘要 ═══[/bold green]")
+    console.print(f"  Iterations: {result.total_iterations}")
+    console.print(f"  Archive size: {result.archive_size}")
+    console.print(f"  Best chain mean_score: {result.best_mean_score:.3f}")
+    console.print(f"  Oracle mean_score: {result.oracle_mean_score:.3f}")
+    console.print(f"  Best candidate: {result.best_candidate_id}")
+    console.print(f"  Total tokens: {result.total_tokens:,}")
+    if result.convergence_history:
+        tail = ", ".join(f"{s:.3f}" for s in result.convergence_history[-5:])
+        console.print(f"  Convergence (last 5): {tail}")
+    console.print("  Per-task best scores:")
+    for tid, score in sorted(result.per_task_best_scores.items()):
+        console.print(f"    {tid}: {score:.3f}")
+    console.print(f"  输出目录：{out_path}")
 
 
 @app.command()

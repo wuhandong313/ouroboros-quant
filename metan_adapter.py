@@ -74,6 +74,7 @@ def run_metan(
     beam_width: int = 2,
     output_dir: str = "metan_output",
     resume: bool = False,
+    limit: int | None = None,
 ) -> "object":
     """编程式入口：装配 Meta^n 全栈并对 quant_backtest 任务集跑进化。
 
@@ -97,7 +98,7 @@ def run_metan(
     llm_client = LLMClient(llm_config)
 
     adapter = QuantAdapter(data_dir=str(DATA_DIR), timeout=600)
-    tasks = adapter.load_tasks()
+    tasks = adapter.load_tasks(limit=limit)
     if not tasks:  # pragma: no cover — load_tasks 空时已抛 RuntimeError
         raise RuntimeError(f"未发现问题目录（{DATA_DIR}）")
     executor = OpenEvolveExecutor(adapter)

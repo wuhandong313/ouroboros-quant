@@ -66,42 +66,79 @@
 
 <header>
   <h1>Ouroboros-Quant · M1 阶段报告</h1>
-  <div class="sub">递归自我改进（RSI）量化策略研发 Agent 系统 · 报告生成于 2026-10-05 · 里程碑 M1：策略代码进化内循环</div>
+  <div class="sub">递归自我改进（RSI）量化研究 Agent 系统 · 报告生成于 2026-10-05 · 里程碑 M1：信号/因子代码进化内循环</div>
 </header>
 
-<h2>1 · 项目概览</h2>
+<h2>1 · 项目定位：把 RSI 嵌入量化研究流程</h2>
 <div class="card">
-  <p><strong>定位</strong>：agent 研发交易策略，同时进化自身的提示词、工作流与策略代码，形成双层自进化闭环。
-  不重造轮子——进化引擎复用成熟开源框架，创新点放在量化领域特有的评测设计上。</p>
+  <p><strong>定位</strong>：让 AI agent 按专业量化研究流程研发策略（数据 → 因子/信号 → 检验 → 组合 → 归因），
+  并让"研究员本身"随研究过程持续进化——进化不是脱离流程的炫技，而是自动化研究流程中"假设生成与迭代改进"环节。
+  不重造轮子——进化引擎复用论文官方开源实现（OpenEvolve / EvoAgentX），自研仅限量化领域特定的检验管线。</p>
   <div class="grid">
-    <div class="card kpi"><div class="num">3 / 3</div><div class="lbl">里程碑 M1 里程碑进度（脚手架→评测→进化）</div></div>
+    <div class="card kpi"><div class="num">3 / 3</div><div class="lbl">里程碑 M1 进度（脚手架→检验管线→进化）</div></div>
     <div class="card kpi"><div class="num">11</div><div class="lbl">标的（1 ETF + 10 股票，2020-2025 日线）</div></div>
-    <div class="card kpi"><div class="num">3</div><div class="lbl">种子策略基线全部跑通</div></div>
-    <div class="card kpi"><div class="num">0</div><div class="lbl">自研框架代码——全部复用开源</div></div>
+    <div class="card kpi"><div class="num">3</div><div class="lbl">种子信号全部完成基线检验</div></div>
+    <div class="card kpi"><div class="num">5</div><div class="lbl">研究流程环节已覆盖（共 5 环）</div></div>
   </div>
 </div>
 
-<h2>2 · 双层进化架构</h2>
+<h2>2 · 量化研究流水线 × 自进化闭环</h2>
+<div class="card">
+  <table>
+    <tr><th style="width:120px">研究环节</th><th>业界标准做法</th><th>本系统对应组件</th><th style="width:90px">状态</th></tr>
+    <tr>
+      <td><strong>① 数据工程</strong></td>
+      <td>清洗、复权、特征库、数据质量监控</td>
+      <td><code>runner/data.py</code>：akshare→parquet 增量缓存，缺失/复权异常/停牌等 6 项质量检查</td>
+      <td><span class="pill ok">已实现</span></td>
+    </tr>
+    <tr>
+      <td><strong>② 因子/信号研究</strong></td>
+      <td>因子假设 → 信号构造 → 因子库沉淀</td>
+      <td>信号 = 可进化 Python 函数（EVOLVE-BLOCK）；<strong>内循环 OpenEvolve 自动挖掘信号逻辑</strong>；因子库沉淀在路线图</td>
+      <td><span class="pill doing">核心已实现</span></td>
+    </tr>
+    <tr>
+      <td><strong>③ 检验与评价</strong></td>
+      <td>样本外检验、成本真实性、多重检验校正（Deflated Sharpe）、IC/IR 分层分析</td>
+      <td><code>evaluator/</code>：train/val/test 三段 + 费率滑点 + 换手/复杂度惩罚 + 交易门槛；IC/IR、walk-forward 在路线图</td>
+      <td><span class="pill doing">部分实现</span></td>
+    </tr>
+    <tr>
+      <td><strong>④ 组合与风控</strong></td>
+      <td>风险模型、组合优化器、行业/个股约束</td>
+      <td>等权单信号过渡；风险模型与优化器在路线图（M3+）</td>
+      <td><span class="pill todo">路线图</span></td>
+    </tr>
+    <tr>
+      <td><strong>⑤ 归因复盘</strong></td>
+      <td>绩效归因、失败实验复盘、知识沉淀</td>
+      <td>教训库 <code>research_agent/memory.py</code>：失败回测 → 结构化教训（偏差/过拟合/风险）→ FTS5 检索回流；Brinson 归因在路线图</td>
+      <td><span class="pill doing">部分实现</span></td>
+    </tr>
+  </table>
+</div>
+
 <div class="flow">
-  <div class="box"><strong>外循环 · 研究员 agent 自进化</strong><small>EvoAgentX：TextGrad / MIPRO 进化 prompt，AFlow(MCTS) 进化研究工作流（M2/M3）</small></div>
-  <div class="arrow">↓ 产出：因子假设 · 策略代码骨架 ↓</div>
+  <div class="box"><strong>外循环 · 研究员 agent 自进化（M2/M3）</strong><small>EvoAgentX：TextGrad/MIPRO 进化"假设生成与实验设计"能力，AFlow(MCTS) 进化研究工作流</small></div>
+  <div class="arrow">↓ 产出：因子假设 · 研究计划 · 信号代码骨架 ↓</div>
   <div class="loop-inner">
-    <div class="tag">内循环 · 策略代码进化（M1 已跑通）</div>
+    <div class="tag">内循环 · 信号/因子代码进化（M1 已跑通）</div>
     <div class="flow">
-      <div class="box" style="border-color: var(--good); width: min(400px,100%);">OpenEvolve（AlphaEvolve 开源实现）<small>从档案采样父代 → LLM 提出代码 diff → 回测验证</small></div>
+      <div class="box" style="border-color: var(--good); width: min(400px,100%);">OpenEvolve（AlphaEvolve 开源实现）<small>从档案采样父代 → LLM 提出信号代码 diff → 检验管线验证</small></div>
       <div class="arrow">↓</div>
-      <div class="box" style="border-color: var(--good); width: min(400px,100%);">vectorbt 回测 + 防过拟合 fitness<small>val 段夏普 − 回撤惩罚 − 换手成本 − 复杂度惩罚</small></div>
-      <div class="arrow">↓ 优者入库，劣者淘汰 ↓</div>
+      <div class="box" style="border-color: var(--good); width: min(400px,100%);">检验管线（vectorbt + 防过拟合 fitness）<small>val 段夏普 − 回撤惩罚 − 换手成本 − 复杂度惩罚；test 段对进化全程不可见</small></div>
+      <div class="arrow">↓ 通过检验者入档案，劣者淘汰 ↓</div>
     </div>
   </div>
-  <div class="arrow">↑ 失败轨迹 → 结构化教训（SQLite FTS5）→ 注入 prompt/工作流 ↑</div>
+  <div class="arrow">↑ ⑤ 归因复盘：失败轨迹 → 结构化教训 → 注入研究假设与工作流 ↑</div>
 </div>
 
 <h2>3 · 技术栈（全部现成开源）</h2>
 <table>
   <tr><th>组件</th><th>选择</th><th>角色</th><th>状态</th></tr>
-  <tr><td>代码进化</td><td><code>openevolve 0.4.0</code></td><td>内循环：进化策略/因子代码（EVOLVE-BLOCK 标记区域）</td><td><span class="pill ok">已接入</span></td></tr>
-  <tr><td>回测引擎</td><td><code>vectorbt 1.1.1</code></td><td>向量化回测，from_orders + targetpercent</td><td><span class="pill ok">已接入</span></td></tr>
+  <tr><td>代码进化</td><td><code>openevolve 0.4.0</code></td><td>内循环：进化信号/因子代码（EVOLVE-BLOCK 标记区域）</td><td><span class="pill ok">已接入</span></td></tr>
+  <tr><td>回测引擎</td><td><code>vectorbt 1.1.1</code></td><td>检验管线底座：向量化回测，from_orders + targetpercent</td><td><span class="pill ok">已接入</span></td></tr>
   <tr><td>数据源</td><td><code>akshare</code></td><td>A股日线（前复权），parquet 本地缓存 + 增量更新</td><td><span class="pill ok">已接入</span></td></tr>
   <tr><td>LLM</td><td><code>DeepSeek (deepseek-chat)</code></td><td>变异提出者（OpenAI 兼容接口，key 走 .env）</td><td><span class="pill ok">已连通</span></td></tr>
   <tr><td>工作流进化</td><td><code>evoagentx</code></td><td>外循环：prompt/工作流自进化</td><td><span class="pill todo">M2 接入</span></td></tr>
@@ -112,33 +149,33 @@
 <table>
   <tr><th>模块</th><th>文件</th><th>说明</th></tr>
   <tr><td>配置中心</td><td><code>config.py · configs/base.yaml</code></td><td>评测基准写死：三段切分、费率、fitness 权重——策略代码无权触碰</td></tr>
-  <tr><td>数据管道</td><td><code>runner/data.py</code></td><td>akshare → parquet，增量缓存，6 项质量检查（缺失/复权异常/停牌…）</td></tr>
-  <tr><td>回测封装</td><td><code>evaluator/backtest.py</code></td><td>确定性回测；段前 250 bar 指标预热，段内交易</td></tr>
-  <tr><td>适应度</td><td><code>evaluator/fitness.py</code></td><td>多标的聚合 + 交易门槛 + 复杂度惩罚</td></tr>
+  <tr><td>数据管道</td><td><code>runner/data.py</code></td><td>①数据工程：akshare → parquet，增量缓存，6 项质量检查（缺失/复权异常/停牌…）</td></tr>
+  <tr><td>回测封装</td><td><code>evaluator/backtest.py</code></td><td>③检验管线：确定性回测；段前 250 bar 指标预热，段内交易</td></tr>
+  <tr><td>适应度</td><td><code>evaluator/fitness.py</code></td><td>③检验管线：多标的聚合 + 交易门槛 + 复杂度惩罚</td></tr>
   <tr><td>沙箱</td><td><code>runner/sandbox.py</code></td><td>spawn 子进程 + CPU rlimit + 超时，生成代码隔离执行</td></tr>
   <tr><td>实验追踪</td><td><code>runner/tracker.py</code></td><td>SQLite 全量记录每次评测（7 条 runs 已入库）</td></tr>
-  <tr><td>教训记忆库</td><td><code>research_agent/memory.py</code></td><td>FTS5 全文检索，M2 注入研究员 prompt</td></tr>
+  <tr><td>教训记忆库</td><td><code>research_agent/memory.py</code></td><td>⑤归因复盘：FTS5 全文检索，失败实验教训回流，M2 注入研究员 prompt</td></tr>
   <tr><td>CLI</td><td><code>app.py</code></td><td><code>ouro eval / evolve / report</code></td></tr>
   <tr><td>种子策略 ×3</td><td><code>strategies/seed/</code></td><td>双均线 / RSI 均值回归 / 动量，EVOLVE-BLOCK 标记可进化区域</td></tr>
 </table>
 
-<h2>5 · 种子策略基线（2024 验证段 · 11 标的）</h2>
+<h2>5 · 种子信号基线（②信号研究 × ③检验管线 · 2024 验证段 · 11 标的）</h2>
 <div class="card">
   <div class="formula">fitness = mean(夏普) − 1.0×mean(最大回撤) − 0.5×mean(换手率) − 0.01×代码行数</div>
   <table>
-    <tr><th>策略</th><th>fitness</th><th>mean sharpe</th><th>mean MDD</th><th>换手率</th><th>交易数</th><th>结论</th></tr>
+    <tr><th>种子信号</th><th>fitness</th><th>mean sharpe</th><th>mean MDD</th><th>换手率</th><th>交易数</th><th>结论</th></tr>
     <tr><td>ma_cross 双均线</td><td class="num-td"><strong>−0.92</strong></td><td class="num-td">+0.23</td><td class="num-td">−18.9%</td><td class="num-td">2.5</td><td class="num-td">31</td><td>基准存活，进化起点</td></tr>
     <tr><td>rsi_reversion</td><td class="num-td"><strong>−5.65</strong></td><td class="num-td">+0.39</td><td class="num-td">−17.7%</td><td class="num-td">12.2</td><td class="num-td">1051</td><td>夏普为正但高换手被成本惩罚压制 → <strong>进化空间最大</strong></td></tr>
     <tr><td>momentum</td><td class="num-td"><strong>−2.84</strong></td><td class="num-td">−0.12</td><td class="num-td">−18.3%</td><td class="num-td">5.7</td><td class="num-td">63</td><td>2024 单边行情不利</td></tr>
   </table>
-  <p class="muted" style="font-size:13px; margin-top:8px;">fitness 为负是正常起点：2024 验证段 + 真实费率/滑点 + 成本惩罚，正是留给进化搜索去改善的空间。</p>
+  <p class="muted" style="font-size:13px; margin-top:8px;">fitness 为负是正常起点：2024 验证段 + 真实费率/滑点 + 成本惩罚，正是留给进化搜索去改善的空间。下一阶段将接入因子级检验指标（IC / RankIC / 分层多空），把"信号研究"与"组合回测"分层评价。</p>
 </div>
 
-<h3>分标的夏普（策略 × 标的）</h3>
+<h3>分标的夏普（信号 × 标的）</h3>
 <div class="card">
-  <p style="font-size:13px;" class="muted">每行一条策略，条形 = 各标的验证段夏普（红正绿负按右图例）</p>
+  <p style="font-size:13px;" class="muted">每行一条种子信号，条形 = 各标的验证段夏普</p>
   <div id="perSymbol"></div>
-  <p style="font-size:12px;" class="muted">观察：三个策略在 601318/600036/000333/600900（金融/白电/水电）上表现普遍更好，在 600519/000858（白酒）上普遍更差——2024 板块行情主导，提示进化方向应引入板块/状态感知。</p>
+  <p style="font-size:12px;" class="muted">观察：三条信号在 601318/600036/000333/600900（金融/白电/水电）上表现普遍更好，在 600519/000858（白酒）上普遍更差——2024 板块行情主导，提示进化方向应引入板块/市场状态感知（对应路线图中的市场状态分格档案）。</p>
 </div>
 
 <h2>6 · 首次进化战役（冒烟测试，已完成）</h2>
@@ -166,18 +203,18 @@
   <div class="good-note" style="margin-top:10px;">内循环闭环验证通过：进化 → 回测验证 → 档案保留，全流程无人干预，且进化方向与成本惩罚设计完全一致（换手率被显著压低）。test 段（2025，进化全程不可见）的正式评估将在战役规模扩大后进行。</div>
 </div>
 
-<h2>7 · 评测管线的防过拟合设计（创新点 1）</h2>
+<h2>7 · 检验管线的防过拟合设计（创新点 1 · ③检验与评价）</h2>
 <div class="card">
-  <p>进化搜索在量化里的头号杀手是<strong>多重检验过拟合</strong>——试得越多越容易撞出"假策略"。本项目的评测管线把防护直接编码进 fitness：</p>
+  <p>进化搜索在量化里的头号杀手是<strong>多重检验过拟合</strong>——试得越多越容易撞出"假策略"。检验管线把防护直接编码进 fitness：</p>
   <table>
     <tr><th>机制</th><th>实现</th></tr>
-    <tr><td>时间三段切分</td><td>train(2020-23) 进化 / <strong>val(2024) 适应度</strong> / test(2025) 只做最终报告，配置写死、策略代码不可触碰</td></tr>
-    <tr><td>成本真实化</td><td>双边佣金 3bp + 滑点 1bp + 换手率惩罚项，直接压制高频过拟合解</td></tr>
+    <tr><td>时间三段切分</td><td>train(2020-23) 进化 / <strong>val(2024) 适应度</strong> / test(2025) 只做最终报告，配置写死、信号代码不可触碰</td></tr>
+    <tr><td>成本真实性</td><td>双边佣金 3bp + 滑点 1bp + 换手率惩罚项，直接压制高频过拟合解</td></tr>
     <tr><td>复杂度惩罚</td><td>按代码行数惩罚，抑制参数堆砌</td></tr>
     <tr><td>交易门槛</td><td>合计交易 &lt;10 次、有效标的 &lt;一半 → fitness = −∞，过滤退化解</td></tr>
     <tr><td>指标预热</td><td>段前 250 bar 历史供指标计算（纯过去数据，无未来泄漏）</td></tr>
   </table>
-  <p class="muted" style="font-size:13px;">M3 计划加入：walk-forward 滚动验证 + Deflated Sharpe Ratio 多重检验校正 + 市场状态分格档案（MAP-Elites）。</p>
+  <p class="muted" style="font-size:13px;">路线图（对齐业界检验标准）：因子级 IC/RankIC/分层多空检验 → walk-forward 滚动验证 → Deflated Sharpe Ratio 多重检验校正 → 市场状态分格档案（MAP-Elites）。</p>
 </div>
 
 <h2>8 · 过程中解决的关键问题</h2>
@@ -197,15 +234,16 @@
   <p class="muted" style="font-size:13px; margin-top:8px;">后三个问题均通过阅读 OpenEvolve 0.4.0 源码定位——参考实现源码而非猜测 API，是本次调试最快的路径。</p>
 </div>
 
-<h2>9 · 下一步</h2>
+<h2>9 · 下一步（按量化研究流程推进）</h2>
 <div class="card">
   <table>
-    <tr><th>阶段</th><th>内容</th><th>状态</th></tr>
-    <tr><td><strong>M1 收尾</strong></td><td>冒烟战役验证闭环 → 扩大战役（400 迭代）三种子并行进化</td><td><span class="pill doing">进行中</span></td></tr>
-    <tr><td><strong>M2（第 2-3 周）</strong></td><td>EvoAgentX 研究员 agent（假设→代码→回测→评审）；TextGrad/MIPRO 进化 prompt；教训库注入</td><td><span class="pill todo">待开始</span></td></tr>
-    <tr><td><strong>M3（第 4-5 周）</strong></td><td>AFlow(MCTS) 进化研究工作流；跨层蒸馏；Pareto 档案 + 市场状态分格</td><td><span class="pill todo">待开始</span></td></tr>
+    <tr><th>阶段</th><th>内容</th><th>对应研究环节</th><th>状态</th></tr>
+    <tr><td><strong>M1 收尾</strong></td><td>扩大战役规模（400 迭代）三种子并行进化 → test 段正式评估</td><td>②信号研究 × ③检验</td><td><span class="pill doing">进行中</span></td></tr>
+    <tr><td><strong>M2（第 2-3 周）</strong></td><td>因子级检验（IC/RankIC/分层多空）+ 因子库管理；EvoAgentX 研究员 agent（假设→代码→检验→评审）；TextGrad/MIPRO 进化假设生成 prompt；教训库注入</td><td>②信号研究 × ⑤归因复盘</td><td><span class="pill todo">待开始</span></td></tr>
+    <tr><td><strong>M3（第 4-5 周）</strong></td><td>walk-forward + Deflated Sharpe 多重检验校正；AFlow(MCTS) 进化研究工作流；市场状态分格 Pareto 档案；跨层蒸馏（成功模式→因子库，失败模式→检查清单）</td><td>③检验 × 自进化闭环</td><td><span class="pill todo">待开始</span></td></tr>
+    <tr><td><strong>M4（远期）</strong></td><td>风险模型 + 组合优化器（行业/个股约束）；多信号组合回测；Brinson 归因；模拟盘前瞻验证</td><td>④组合风控 × ⑤归因</td><td><span class="pill todo">路线图</span></td></tr>
   </table>
-  <div class="good-note" style="margin-top:12px;">验收标准（M1）：进化后某种子策略在验证段 fitness 有可测量提升，且 test 段（2025，进化全程不可见）方向一致。</div>
+  <div class="good-note" style="margin-top:12px;">验收标准（M1）：进化后某种子信号在验证段 fitness 有可测量提升，且 test 段（2025，进化全程不可见）方向一致——冒烟战役已通过 fitness 提升项，test 段评估随扩大战役一并完成。</div>
 </div>
 
 <footer>Ouroboros-Quant · RSI 量化策略研发 Agent · M1 阶段报告 · 数据与代码均在仓库内可复现</footer>

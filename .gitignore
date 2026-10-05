@@ -20,6 +20,8 @@ variants/
 *.sqlite
 *.db
 openevolve_output/
+metan_output/
+metan_output_smoke/
 .env
 references/
 papers/

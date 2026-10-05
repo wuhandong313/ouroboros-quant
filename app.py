@@ -87,42 +87,13 @@ def evolve(strategy: str, iterations: int = 0, output_dir: str = "openevolve_out
         console.print(f"最佳策略已保存：{best_path}")
 
 
-@app.command("metan")
-def metan(
-    iterations: int = typer.Option(10, "--iterations", help="Meta^n 最大迭代次数"),
-    beam_width: int = typer.Option(2, "--beam-width", help="每轮选择的父代数 B"),
-    output_dir: str = typer.Option("metan_output", "--output-dir", help="输出目录"),
-    resume: bool = typer.Option(False, "--resume", help="从 output_dir 的 checkpoint 恢复"),
-    limit: int = typer.Option(None, "--limit", help="只跑前 N 个任务（冒烟用）"),
-):
-    """Meta^n 进化战役（单标的 RSI 策略，DeepSeek 后端）。"""
-    from metan_adapter import run_metan
-
-    console.print(
-        f"[green]Meta^n 进化开始：iterations={iterations}, "
-        f"beam_width={beam_width}, output={output_dir}[/green]"
-    )
-    result = run_metan(
-        max_iterations=iterations,
-        beam_width=beam_width,
-        output_dir=output_dir,
-        resume=resume,
-        limit=limit,
-    )
-    console.print("[bold green]═══ Meta^n 最终摘要 ═══[/bold green]")
-    console.print(f"  Iterations: {result.total_iterations}")
-    console.print(f"  Archive size: {result.archive_size}")
-    console.print(f"  Best chain mean_score: {result.best_mean_score:.3f}")
-    console.print(f"  Oracle mean_score: {result.oracle_mean_score:.3f}")
-    console.print(f"  Best candidate: {result.best_candidate_id}")
-    console.print(f"  Total tokens: {result.total_tokens:,}")
-
-
 @app.command("evolve-metan")
 def evolve_metan(
     iterations: int = typer.Option(12, "--iterations", help="Meta^n 最大迭代次数"),
     patience: int = typer.Option(3, "--patience", help="连续无改善轮数后提前停止"),
     max_depth: int = typer.Option(6, "--max-depth", help="候选链最大深度（递归 Ω 层数）"),
+    beam_width: int = typer.Option(1, "--beam-width", help="每轮选择的父代数 B"),
+    eval_repeats: int = typer.Option(1, "--eval-repeats", help="重复评测次数；vectorbt 回测确定性高，1 即可"),
     output_dir: str = typer.Option("metan_output", "--output-dir", help="输出目录"),
     resume: bool = typer.Option(False, "--resume", help="从 output_dir 的 checkpoint 恢复"),
     seed: int = typer.Option(42, "--seed", help="随机种子"),
@@ -175,12 +146,12 @@ def evolve_metan(
         output_dir=str(out_path),
         seed=seed,
         epsilon=0.02,
-        beam_width=1,
+        beam_width=beam_width,
         beam_candidates=1,
         temperatures=[0.5, 0.7, 0.9],
         consolidate=True,       # 每候选只改一个焦点标的，其余继承最优（防互相拖累）
         regression_guard=True,  # 可部署最优不得低于 base 复采样下限
-        eval_repeats=3,         # LLM 生成随机，中位数降噪
+        eval_repeats=eval_repeats,  # vectorbt 回测确定性高，1 即可
         gate_tasks=3,
         parallel=1,
     )
@@ -208,11 +179,12 @@ def evolve_metan(
         "patience": patience,
         "max_depth": max_depth,
         "epsilon": 0.02,
+        "beam_width": beam_width,
         "parallel": 1,
         "seed": seed,
         "consolidate": True,
         "regression_guard": True,
-        "eval_repeats": 3,
+        "eval_repeats": eval_repeats,
         "gate_tasks": 3,
         "symbols": adapter.symbols,
         "fitness_config": str(METAN_FITNESS_CONFIG),

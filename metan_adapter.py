@@ -141,4 +141,8 @@ def run_metan(
         "symbols": [s["code"] for s in cfg.data.symbols[:3]],
         "train_segment": list(cfg.split.train),
     }
-    return asyncio.run(orchestrator.run(tasks, resume=resume, run_config=run_config))
+    result = asyncio.run(orchestrator.run(tasks, resume=resume, run_config=run_config))
+    # run() 只做增量落盘（archive/checkpoint/mid-run summary）；
+    # per_task_best/、oracle_summary.json、lineage/ 等终稿必须显式 save_results
+    orchestrator.save_results(result, run_config=run_config)
+    return result

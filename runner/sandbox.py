@@ -45,15 +45,20 @@ def _child_entry(payload_file: str, result_file: str) -> None:
 
 
 def run_in_sandbox(strategy_path: Path, symbols: list[str], segment: str = "val",
-                   timeout: int = DEFAULT_TIMEOUT) -> dict:
-    """在受限子进程中评测策略，返回 {"ok": bool, "fitness": float, ...}。"""
+                   timeout: int = DEFAULT_TIMEOUT,
+                   config_path: str | None = None) -> dict:
+    """在受限子进程中评测策略，返回 {"ok": bool, "fitness": float, ...}。
+
+    config_path：可选的评测配置文件（如 configs/metan_fitness.yaml），
+    传入后子进程用 load_config(Path(config_path)) 替代默认 base.yaml。
+    """
     import tempfile
 
     # macOS 上 fork 与 Objective-C 运行时冲突（vectorbt/objc 崩溃），必须用 spawn
     ctx = mp.get_context("spawn")
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as pf:
         json.dump({"strategy_path": str(strategy_path), "symbols": symbols,
-                   "segment": segment}, pf)
+                   "segment": segment, "config_path": config_path}, pf)
         payload_file = pf.name
     result_file = payload_file.replace(".json", ".result.json")
 

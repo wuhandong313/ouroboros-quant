@@ -58,7 +58,8 @@ export DEEPSEEK_API_KEY=sk-...   # 默认配置，模型名在 configs/openevolv
 | ma_cross | -0.92 | 0.23 | 2.5 | 趋势跟踪 |
 | rsi_reversion | -5.65 | 0.39 | 12.2 | 高换手被成本惩罚压制——进化空间大 |
 | momentum | -2.84 | -0.12 | 5.7 | 2024 单边行情不利 |
-| **rsi_reversion 进化 12 代后** | **-0.22** | **0.93** | **2.1** | Wilder 平滑+信号平滑+连续趋势过滤+软死区 |
+| **OpenEvolve 基线：rsi_reversion 进化 12 代** | **-0.22** | **0.93** | **2.1** | Wilder 平滑+信号平滑+连续趋势过滤+软死区（聚合 fitness） |
+| **Meta^n 战役 11 迭代（11 标的多任务）** | **-1.28** | — | — | per-task best：600276 **+1.58**、000333 **+0.38**、600036 **+0.33** 三标的正分；chain test(2025) -1.67，衰减可控；仅 20 万 tokens（patience 提前停止，best chain 深度 3=2 层 Ω 注入） |
 
 ## 目录
 

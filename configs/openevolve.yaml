@@ -2,16 +2,21 @@
 # 文档：https://github.com/algorithmicsuperintelligence/openevolve
 
 llm:
-  primary_model: "gpt-4o"
-  secondary_model: "gpt-4o-mini"
+  # DeepSeek OpenAI 兼容接口；key 从 .env 的 DEEPSEEK_API_KEY 读取
+  primary_model: "deepseek-chat"
+  secondary_model: "deepseek-chat"
+  api_base: "https://api.deepseek.com"
+  api_key: "${DEEPSEEK_API_KEY}"
   temperature: 0.8
   max_tokens: 8192
+  timeout: 120
 
 database:
   population_size: 40
   archive_size: 40
   num_islands: 2
-  feature_dimensions: []   # M3 阶段接入市场状态分格（MAP-Elites）
+  # MAP-Elites 分格维度；M3 阶段替换为市场状态分格
+  feature_dimensions: ["complexity", "diversity"]
 
 evaluator:
   timeout: 300

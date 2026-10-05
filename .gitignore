@@ -20,3 +20,5 @@ variants/
 *.sqlite
 *.db
 openevolve_output/
+.env
+references/

@@ -12,6 +12,23 @@ DATA_DIR = ROOT / "data"
 DB_PATH = ROOT / "experiments.sqlite"
 
 
+def _load_dotenv() -> None:
+    """加载仓库根目录 .env（不覆盖已有环境变量）。"""
+    env_path = ROOT / ".env"
+    if not env_path.exists():
+        return
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        import os
+        os.environ.setdefault(key.strip(), value.strip())
+
+
+_load_dotenv()
+
+
 @dataclass
 class DataConfig:
     source: str = "akshare"

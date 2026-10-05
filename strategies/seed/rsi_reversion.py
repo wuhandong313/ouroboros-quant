@@ -1,7 +1,7 @@
 """种子策略 2：RSI 均值回归。"""
-# EVOLVE-BLOCK-START:params
+
+# EVOLVE-BLOCK-START
 PARAMS = {"window": 14, "lower": 30, "upper": 70}
-# EVOLVE-BLOCK-END
 
 
 def generate_signals(df, params=None):
@@ -15,3 +15,4 @@ def generate_signals(df, params=None):
     # 超卖买入、超买卖出，区间外线性减仓
     signal = ((params["upper"] - rsi) / (params["upper"] - params["lower"])).clip(0, 1)
     return signal
+# EVOLVE-BLOCK-END

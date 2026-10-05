@@ -44,35 +44,35 @@ def eval_(strategy: str, segment: str = "val"):
 @app.command()
 def evolve(strategy: str, iterations: int = 0, output_dir: str = "openevolve_output"):
     """OpenEvolve 进化战役。"""
-    import json
-
-    from runner import tracker
-    from runner.sandbox import run_in_sandbox
+    from config import ROOT
 
     cfg = load_config()
     n_iters = iterations or cfg.evolution.generations * cfg.evolution.population
-    symbols = [s["code"] for s in cfg.data.symbols]
 
     try:
         from openevolve import run_evolution
+        import openevolve.process_parallel as _pp
     except ImportError:
         console.print("[red]openevolve 未安装：uv sync[/red]")
         raise typer.Exit(1)
 
-    # OpenEvolve 评测接口：callable(program_path) -> metrics dict
-    def evaluator(program_path: str) -> dict:
-        result = run_in_sandbox(Path(program_path), symbols, "val")
-        if not result["ok"]:
-            console.print(f"[yellow]变体评测失败：{result.get('error', '')[:200]}[/yellow]")
-            return {"score": float("-inf")}
-        tracker.record_run(program_path, "val", result["fitness"], result["metrics"],
-                           source="openevolve")
-        return {"score": result["fitness"], "metrics": result["metrics"]}
+    # 上游 bug 修复（0.4.0）：_serialize_config 漏传 enforce_evolve_blocks，
+    # 导致 worker 侧永远关闭 EVOLVE-BLOCK 强制约束
+    _orig_serialize = _pp.ProcessParallelController._serialize_config
 
+    def _patched_serialize(self, config):
+        d = _orig_serialize(self, config)
+        d["enforce_evolve_blocks"] = config.enforce_evolve_blocks
+        return d
+
+    _pp.ProcessParallelController._serialize_config = _patched_serialize
+
+    # 评测器必须是独立文件（OpenEvolve 会序列化 callable，闭包引用会丢失）
+    evaluator_path = ROOT / "evaluator" / "openevolve_eval.py"
     console.print(f"[green]开始进化：{strategy}，{n_iters} 次迭代[/green]")
     result = run_evolution(
         initial_program=strategy,
-        evaluator=evaluator,
+        evaluator=str(evaluator_path),
         config="configs/openevolve.yaml",
         iterations=n_iters,
         output_dir=output_dir,
